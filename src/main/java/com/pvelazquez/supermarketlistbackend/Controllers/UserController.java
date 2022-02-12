@@ -47,19 +47,21 @@ public class UserController {
     }
 
     @PostMapping("/signup/registration")
-    public ResponseEntity signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
+    public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
         User user = userService.getUser(userSignUpForm.getEmail());
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
         if(user == null)
         {
             user = utility.convertUserSignUpToUserModel(userSignUpForm);
+            //TODO
+            //extract verification code an use a utily class to send an email with it
             user = userService.saveUser(user);
-            return ResponseEntity.created(uri).build();
         }else{
-
+            Long id = user.getId();
+            user = utility.convertUserSignUpToUserModel(userSignUpForm);
+            user = userService.updateUser(user,id);
         }
-
-
+        return ResponseEntity.ok("Check your email for the verification code");
     }
 
     @PostMapping("/user/assigneRole")

@@ -50,9 +50,9 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public User updateUser(User user){
-        userRepository.save(user);
-
+    public User updateUser(User user, Long id){
+        user.setId(id);
+        return userRepository.save(user);
     }
 
     public Role saveRole(Role role) throws Exception{
