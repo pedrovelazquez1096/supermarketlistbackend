@@ -22,6 +22,8 @@ public class User {
     private String password;
     private String country;
     private String language;
+    private Boolean locked;
+    private String verificacionCode;
     @ManyToMany(fetch = EAGER)
     private Collection<Role> roles = new ArrayList<>();
 }

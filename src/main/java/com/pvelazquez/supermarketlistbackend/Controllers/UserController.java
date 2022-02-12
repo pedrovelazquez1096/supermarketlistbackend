@@ -7,6 +7,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pvelazquez.supermarketlistbackend.Models.Role;
 import com.pvelazquez.supermarketlistbackend.Models.User;
+import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
 import com.pvelazquez.supermarketlistbackend.Services.UserService;
 import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.Data;
@@ -17,6 +18,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.ws.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -31,6 +33,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final Utility utility = Utility.getInstance();
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getUsers(){
@@ -41,6 +44,22 @@ public class UserController {
     public ResponseEntity<User> saveUser(@RequestBody User user) throws Exception{
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/user/save").toUriString());
         return ResponseEntity.created(uri).body(userService.saveUser(user));
+    }
+
+    @PostMapping("/signup/registration")
+    public ResponseEntity signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
+        User user = userService.getUser(userSignUpForm.getEmail());
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
+        if(user == null)
+        {
+            user = utility.convertUserSignUpToUserModel(userSignUpForm);
+            user = userService.saveUser(user);
+            return ResponseEntity.created(uri).build();
+        }else{
+
+        }
+
+
     }
 
     @PostMapping("/user/assigneRole")
