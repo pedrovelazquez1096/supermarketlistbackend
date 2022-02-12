@@ -23,7 +23,7 @@ public class User {
     private String country;
     private String language;
     private Boolean locked;
-    private String verificacionCode;
+    private String verificationCode;
     @ManyToMany(fetch = EAGER)
     private Collection<Role> roles = new ArrayList<>();
 }

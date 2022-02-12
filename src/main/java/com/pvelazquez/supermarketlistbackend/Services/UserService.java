@@ -50,6 +50,11 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public User updateUser(User user){
+        userRepository.save(user);
+
+    }
+
     public Role saveRole(Role role) throws Exception{
         Role roleTemp = roleRepository.findByName(role.getName());
         if(roleTemp != null)

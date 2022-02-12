@@ -40,7 +40,7 @@ public class Utility {
         user.setCountry(userSignUp.getCountry());
         user.setLanguage(userSignUp.getLanguage());
         user.setLocked(true);
-        user.setVerificacionCode(generateVerificationCode(10000));
+        user.setVerificationCode(generateVerificationCode(10000));
         user.setRoles(new ArrayList<>());
         return user;
     }
