@@ -101,6 +101,8 @@ public class UserController {
                         user.setIsLocked(false);
                         log.info("User: {} unlocked they account", user.getEmail());
                         user = userService.updateUser(user, user.getId());
+                        String body = "Your account has been activated";
+                        emailSender.sendEmail(user.getEmail(),"Account Activated", body);
                         return ResponseEntity.accepted().body(user);
                     }else
                         return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
