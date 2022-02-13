@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 @SpringBootApplication
@@ -18,22 +19,21 @@ public class SupermarketlistbackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SupermarketlistbackendApplication.class, args);
 	}
-
+	/*
 	@Bean
 	CommandLineRunner run(UserService userService){
 		return args -> {
 			userService.saveRole(new Role(null,"ADMIN"));
 			userService.saveRole(new Role(null,"USER"));
 
-			userService.saveUser(new User(null,"Pedro", "admin@mail.com","1234","Mexico","Español", true, "",new ArrayList<>()));
-			userService.saveUser(new User(null,"Eduardo", "user@mail.com","1234","Mexico","Español",new ArrayList<>()));
+			userService.saveUser(new User(null,"Pedro", "admin@mail.com","1234","Mexico","Español", false, "1234", new Timestamp(System.currentTimeMillis()),new ArrayList<>()));
+			//userService.saveUser(new User(null,"Eduardo", "user@mail.com","1234","Mexico","Español",new ArrayList<>()));
 
 			userService.addRoleToUser("admin@mail.com", "ADMIN");
 			userService.addRoleToUser("admin@mail.com", "USER");
-			userService.addRoleToUser("user@mail.com", "USER");
 		};
 	}
-
+	*/
 	@Bean
 	PasswordEncoder passwordEncoder(){
 		return new BCryptPasswordEncoder();

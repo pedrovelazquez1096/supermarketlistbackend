@@ -12,22 +12,23 @@ import com.pvelazquez.supermarketlistbackend.Services.UserService;
 import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.ws.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -54,14 +55,55 @@ public class UserController {
         {
             user = utility.convertUserSignUpToUserModel(userSignUpForm);
             //TODO
-            //extract verification code an use a utily class to send an email with it
+            //Send the email with the verification code and say 10 min to expire
             user = userService.saveUser(user);
+            userService.addRoleToUser(user.getEmail(),"USER");
+            log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
         }else{
-            Long id = user.getId();
-            user = utility.convertUserSignUpToUserModel(userSignUpForm);
-            user = userService.updateUser(user,id);
+            return ResponseEntity.status(CONFLICT).body("Email already in use");
         }
-        return ResponseEntity.ok("Check your email for the verification code");
+        return ResponseEntity.created(uri).body("Please check your email for the verification code");
+    }
+
+    @PostMapping("/signup/newcode")
+    public ResponseEntity<?> sendNewVerificationCode(@RequestParam("email")String email) throws Exception {
+        User user = userService.getUser(email);
+        if(user == null){
+            return ResponseEntity.notFound().build();
+        }else {
+            log.info("user found, account status: {}", user.getIsLocked());
+            if(user.getIsLocked()) {
+                user.setVerificationCode(utility.generateVerificationCode());
+                user.setCodeExpirationDate(utility.generate10Min());
+                user = userService.updateUser(user, user.getId());
+                //TODO
+                //Send the email with the verification code and say 10 min to expire
+                log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
+                return ResponseEntity.accepted().body("Please check your email for the verification code");
+            }else
+                return ResponseEntity.status(CONFLICT).body("Account already in unlocked");
+        }
+    }
+
+    @PostMapping("/signup/confirmation")
+    public ResponseEntity<?> unlockAccount(@RequestBody ConfirmationForm confirmationForm) throws Exception {
+        User user = userService.getUser(confirmationForm.getEmail());
+        if(user != null){
+            if(user.getIsLocked())
+                if(user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
+                    if(user.getVerificationCode().equals(confirmationForm.getCode())){
+                        user.setIsLocked(false);
+                        log.info("User: {} unlocked they account", user.getEmail());
+                        user = userService.updateUser(user, user.getId());
+                        return ResponseEntity.accepted().body(user);
+                    }else
+                        return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
+                else
+                    return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code has expired");
+            else
+                return ResponseEntity.status(CONFLICT).body("Account already unlocked");
+        }else
+            return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/user/assigneRole")
@@ -120,4 +162,10 @@ public class UserController {
 class RoleToUserForm{
     private String email;
     private String roleName;
+}
+
+@Data
+class ConfirmationForm{
+    private String email;
+    private String code;
 }

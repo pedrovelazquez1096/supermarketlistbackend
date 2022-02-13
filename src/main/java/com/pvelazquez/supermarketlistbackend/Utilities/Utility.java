@@ -4,6 +4,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -24,11 +25,19 @@ public class Utility {
         return Algorithm.HMAC256("EsteEsElSecreteKeyParaLaGeneraciondelToken".getBytes());
     }
 
-    public String generateVerificationCode(int upperLimit){
+    public String generateVerificationCode(){
         if(generator == null)
             generator = new Random();
 
-        return Integer.toString(generator.nextInt(upperLimit));
+        return Integer.toString(generator.nextInt(10000));
+    }
+
+    public Timestamp generate10Min(){
+        return new Timestamp(System.currentTimeMillis() + 600000);
+    }
+
+    public Timestamp getCurrentTimestamp(){
+        return new Timestamp(System.currentTimeMillis());
     }
 
     public User convertUserSignUpToUserModel(UserSignUp userSignUp){
@@ -39,8 +48,9 @@ public class Utility {
         user.setPassword(userSignUp.getPassword());
         user.setCountry(userSignUp.getCountry());
         user.setLanguage(userSignUp.getLanguage());
-        user.setLocked(true);
-        user.setVerificationCode(generateVerificationCode(10000));
+        user.setIsLocked(true);
+        user.setVerificationCode(generateVerificationCode());
+        user.setCodeExpirationDate(generate10Min());
         user.setRoles(new ArrayList<>());
         return user;
     }

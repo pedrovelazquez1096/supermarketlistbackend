@@ -33,11 +33,15 @@ public class UserService implements UserDetailsService {
         if(user == null) {
             log.error("Usuario con email {} no encontrado", email);
             throw new UsernameNotFoundException("User not found in the database");
+        }else if(user.getIsLocked()){
+            log.error("Usuario con email {} existe pero tiene la cuenta sin confirmar", user.getEmail());
+            throw new UsernameNotFoundException("User found in the database yet not confirmed");
+        }else {
+            log.info("Usuario nombre {} email {}", user.getName(), user.getEmail());
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getName())));
+            return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);
         }
-        log.info("Usuario nombre {} email {}", user.getName(), user.getEmail());
-        Collection<SimpleGrantedAuthority> authorities =  new ArrayList<>();
-        user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getName())));
-        return new org.springframework.security.core.userdetails.User(user.getEmail(),user.getPassword(),authorities);
     }
 
     public User saveUser(User user) throws Exception{
@@ -50,9 +54,13 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public User updateUser(User user, Long id){
-        user.setId(id);
-        return userRepository.save(user);
+    public User updateUser(User user, Long id) throws Exception {
+        if (userRepository.findById(id).isPresent()) {
+            user.setId(id);
+            return userRepository.save(user);
+        } else {
+            throw new Exception("User not found");
+        }
     }
 
     public Role saveRole(Role role) throws Exception{
