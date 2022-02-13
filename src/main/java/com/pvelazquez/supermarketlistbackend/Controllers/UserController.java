@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pvelazquez.supermarketlistbackend.Models.Role;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
+import com.pvelazquez.supermarketlistbackend.Utilities.EmailSender;
 import com.pvelazquez.supermarketlistbackend.Services.UserService;
 import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.Data;
@@ -34,6 +35,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final EmailSender emailSender;
     private final Utility utility = Utility.getInstance();
 
     @GetMapping("/users")
@@ -56,6 +58,8 @@ public class UserController {
             user = utility.convertUserSignUpToUserModel(userSignUpForm);
             //TODO
             //Send the email with the verification code and say 10 min to expire
+            String body = "This is your verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
+            emailSender.sendEmail(user.getEmail(),"Verification code", body);
             user = userService.saveUser(user);
             userService.addRoleToUser(user.getEmail(),"USER");
             log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
@@ -78,6 +82,8 @@ public class UserController {
                 user = userService.updateUser(user, user.getId());
                 //TODO
                 //Send the email with the verification code and say 10 min to expire
+                String body = "This is your new verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
+                emailSender.sendEmail(user.getEmail(),"Verification code", body);
                 log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
                 return ResponseEntity.accepted().body("Please check your email for the verification code");
             }else
