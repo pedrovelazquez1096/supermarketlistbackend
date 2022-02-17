@@ -53,6 +53,8 @@ public class UserController {
     public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
         if(!utility.validateEmail(userSignUpForm.getEmail()))
             return ResponseEntity.badRequest().body("Invalid Email");
+        if(utility.validatePassword(userSignUpForm.getPassword()) != null)
+            return ResponseEntity.badRequest().body(utility.validatePassword(userSignUpForm.getPassword()));
 
         User user = userService.getUser(userSignUpForm.getEmail());
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());

@@ -40,6 +40,36 @@ public class Utility {
         return emailValidator.isValid(email);
     }
 
+    public String validatePassword(String password){
+        String isValid = null;
+        if (password.length() > 15 || password.length() < 8)
+        {
+            isValid = "Password must be less than 20 and more than 8 characters in length.";
+        }
+        String upperCaseChars = "(.*[A-Z].*)";
+        if (!password.matches(upperCaseChars ))
+        {
+            isValid = "Password must have atleast one uppercase character";
+        }
+        String lowerCaseChars = "(.*[a-z].*)";
+        if (!password.matches(lowerCaseChars ))
+        {
+            isValid = "Password must have atleast one lowercase character";
+        }
+        String numbers = "(.*[0-9].*)";
+        if (!password.matches(numbers ))
+        {
+
+            isValid = "Password must have at least one number";
+        }
+        String specialChars = "(.*[@,#,$,%].*$)";
+        if (!password.matches(specialChars ))
+        {
+            isValid = "Password must have at least one special character among @#$%";
+        }
+        return isValid;
+    }
+
     public String generateVerificationCode(){
         if(generator == null)
             generator = new Random();
@@ -77,7 +107,6 @@ public class Utility {
         user.setId(null);
         user.setName(userSignUp.getName());
         user.setEmail(userSignUp.getEmail());
-        //TODO: Validate Password
         user.setPassword(userSignUp.getPassword());
         user.setCountry(userSignUp.getCountry());
         user.setLanguage(userSignUp.getLanguage());
