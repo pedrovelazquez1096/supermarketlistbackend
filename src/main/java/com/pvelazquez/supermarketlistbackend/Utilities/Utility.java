@@ -77,6 +77,7 @@ public class Utility {
         user.setId(null);
         user.setName(userSignUp.getName());
         user.setEmail(userSignUp.getEmail());
+        //TODO: Validate Password
         user.setPassword(userSignUp.getPassword());
         user.setCountry(userSignUp.getCountry());
         user.setLanguage(userSignUp.getLanguage());
