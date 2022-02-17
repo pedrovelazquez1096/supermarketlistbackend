@@ -51,25 +51,28 @@ public class UserController {
 
     @PostMapping("/signup/registration")
     public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
+        if(!utility.validateEmail(userSignUpForm.getEmail()))
+            return ResponseEntity.badRequest().body("Invalid Email");
+
         User user = userService.getUser(userSignUpForm.getEmail());
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
+
         if(user == null)
         {
             user = utility.convertUserSignUpToUserModel(userSignUpForm);
-            //String body = "This is your verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
-
-            emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
+            emailSender.sendEmail(user.getEmail(), "Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(), user.getVerificationCode()), user.getVerificationCode()));
             user = userService.saveUser(user);
-            userService.addRoleToUser(user.getEmail(),"USER");
+            userService.addRoleToUser(user.getEmail(), "USER");
             log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
-        }else{
+            return ResponseEntity.created(uri).body("Please check your email for the verification code");
+        }else
             return ResponseEntity.status(CONFLICT).body("Email already in use");
-        }
-        return ResponseEntity.created(uri).body("Please check your email for the verification code");
     }
 
     @PostMapping("/signup/newcode")
     public ResponseEntity<?> sendNewVerificationCode(@RequestParam("email")String email) throws Exception {
+        if(!utility.validateEmail(email))
+            return ResponseEntity.badRequest().body("Invalid Email");
         User user = userService.getUser(email);
         if(user == null){
             return ResponseEntity.notFound().build();
@@ -86,32 +89,11 @@ public class UserController {
                 return ResponseEntity.status(CONFLICT).body("Account already in unlocked");
         }
     }
-    /*
-    @PostMapping("/signup/confirmation")
-    public ResponseEntity<?> unlockAccount(@RequestBody ConfirmationForm confirmationForm) throws Exception {
-        User user = userService.getUser(confirmationForm.getEmail());
-        if(user != null){
-            if(user.getIsLocked())
-                if(user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
-                    if(user.getVerificationCode().equals(confirmationForm.getCode())){
-                        user.setIsLocked(false);
-                        log.info("User: {} unlocked they account", user.getEmail());
-                        user = userService.updateUser(user, user.getId());
-                        String body = "Your account has been activated";
-                        emailSender.sendEmail(user.getEmail(),"Account Activated", body);
-                        return ResponseEntity.accepted().body(user);
-                    }else
-                        return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
-                else
-                    return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code has expired");
-            else
-                return ResponseEntity.status(CONFLICT).body("Account already unlocked");
-        }else
-            return ResponseEntity.notFound().build();
-    }*/
 
     @GetMapping("/signup/confirmation")
     public ResponseEntity<?> unlockAccount(@RequestParam("email")String email, @RequestParam("code")String code) throws Exception {
+        if(!utility.validateEmail(email))
+            return ResponseEntity.badRequest().body("Invalid Email");
         User user = userService.getUser(email);
         if(user != null){
             if(user.getIsLocked())
@@ -132,8 +114,8 @@ public class UserController {
             return ResponseEntity.notFound().build();
     }
 
-    @PostMapping("/user/assigneRole")
-    public ResponseEntity<?> assigneRoleToUser(@RequestBody RoleToUserForm form){
+    @PostMapping("/user/assignRole")
+    public ResponseEntity<?> assignRoleToUser(@RequestBody RoleToUserForm form){
         userService.addRoleToUser(form.getEmail(), form.getRoleName());
 
         return ResponseEntity.ok().build();
@@ -188,10 +170,4 @@ public class UserController {
 class RoleToUserForm{
     private String email;
     private String roleName;
-}
-
-@Data
-class ConfirmationForm{
-    private String email;
-    private String code;
 }

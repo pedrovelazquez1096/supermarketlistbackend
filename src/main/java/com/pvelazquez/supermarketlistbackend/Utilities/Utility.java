@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 public class Utility {
     private static Utility utility_instance = null;
+    private static EmailValidator emailValidator = null;
     private static Random generator = null;
     private static final String domain = "http://localhost:8080";
     private Utility(){
@@ -22,13 +24,20 @@ public class Utility {
     }
 
     public static Utility getInstance(){
-        if(utility_instance == null)
+        if(utility_instance == null) {
             utility_instance = new Utility();
+        }
         return utility_instance;
     }
 
     public Algorithm getAlgorithm(){
         return Algorithm.HMAC256("EsteEsElSecreteKeyParaLaGeneraciondelToken".getBytes());
+    }
+
+    public Boolean validateEmail(String email){
+        if(emailValidator == null)
+            emailValidator = EmailValidator.getInstance();
+        return emailValidator.isValid(email);
     }
 
     public String generateVerificationCode(){
