@@ -56,10 +56,9 @@ public class UserController {
         if(user == null)
         {
             user = utility.convertUserSignUpToUserModel(userSignUpForm);
-            //TODO
-            //Send the email with the verification code and say 10 min to expire
-            String body = "This is your verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
-            emailSender.sendEmail(user.getEmail(),"Verification code", body);
+            //String body = "This is your verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
+
+            emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
             user = userService.saveUser(user);
             userService.addRoleToUser(user.getEmail(),"USER");
             log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
@@ -78,19 +77,16 @@ public class UserController {
             log.info("user found, account status: {}", user.getIsLocked());
             if(user.getIsLocked()) {
                 user.setVerificationCode(utility.generateVerificationCode());
-                user.setCodeExpirationDate(utility.generate10Min());
+                user.setCodeExpirationDate(utility.generate10MinCode());
                 user = userService.updateUser(user, user.getId());
-                //TODO
-                //Send the email with the verification code and say 10 min to expire
-                String body = "This is your new verification code " + user.getVerificationCode() + ". It will expire in 10 minutes. Please do not reply to this mail";
-                emailSender.sendEmail(user.getEmail(),"Verification code", body);
+                emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
                 log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
                 return ResponseEntity.accepted().body("Please check your email for the verification code");
             }else
                 return ResponseEntity.status(CONFLICT).body("Account already in unlocked");
         }
     }
-
+    /*
     @PostMapping("/signup/confirmation")
     public ResponseEntity<?> unlockAccount(@RequestBody ConfirmationForm confirmationForm) throws Exception {
         User user = userService.getUser(confirmationForm.getEmail());
@@ -101,7 +97,31 @@ public class UserController {
                         user.setIsLocked(false);
                         log.info("User: {} unlocked they account", user.getEmail());
                         user = userService.updateUser(user, user.getId());
+                        String body = "Your account has been activated";
+                        emailSender.sendEmail(user.getEmail(),"Account Activated", body);
                         return ResponseEntity.accepted().body(user);
+                    }else
+                        return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
+                else
+                    return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code has expired");
+            else
+                return ResponseEntity.status(CONFLICT).body("Account already unlocked");
+        }else
+            return ResponseEntity.notFound().build();
+    }*/
+
+    @GetMapping("/signup/confirmation")
+    public ResponseEntity<?> unlockAccount(@RequestParam("email")String email, @RequestParam("code")String code) throws Exception {
+        User user = userService.getUser(email);
+        if(user != null){
+            if(user.getIsLocked())
+                if(user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
+                    if(user.getVerificationCode().equals(code)){
+                        user.setIsLocked(false);
+                        log.info("User: {} unlocked they account", user.getEmail());
+                        user = userService.updateUser(user, user.getId());
+                        emailSender.sendEmail(user.getEmail(),"Account Activated", utility.buildBodyEmailActivation(user.getName()));
+                        return ResponseEntity.accepted().body("Activated");
                     }else
                         return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
                 else
