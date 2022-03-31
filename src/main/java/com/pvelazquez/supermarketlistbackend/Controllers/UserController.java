@@ -14,7 +14,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -24,9 +23,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.time.LocalDateTime.now;
+import static java.util.Map.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
-import static org.springframework.http.HttpStatus.FORBIDDEN;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
@@ -40,7 +39,7 @@ public class UserController {
         return ResponseEntity.ok(
                 Response.builder()
                         .timeStamp(now())
-                        .data(Map.of("Users", userService.getUsers()))
+                        .data(of("users", userService.getUsers()))
                         .messange("Users retrieved")
                         .status(OK)
                         .statusCode(OK.value())
@@ -49,22 +48,43 @@ public class UserController {
     }
 
     @PostMapping("/user/save")
-    public ResponseEntity<User> saveUser(@RequestBody User user) throws Exception{
-        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/user/save").toUriString());
-        return ResponseEntity.created(uri).body(userService.saveUser(user));
+    public ResponseEntity<Response> saveUser(@RequestBody User user) throws Exception{
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timeStamp(now())
+                        .data(of("user", userService.saveUser(user)))
+                        .messange("User created")
+                        .status(CREATED)
+                        .statusCode(CREATED.value())
+                        .build()
+        );
     }
 
-    @PostMapping("/user/assigneRole")
-    public ResponseEntity<?> assigneRoleToUser(@RequestBody RoleToUserForm form){
-        userService.addRoleToUser(form.getEmail(), form.getRoleName());
+    @PostMapping("/user/assignRole")
+    public ResponseEntity<Response> assignRoleToUser(@RequestBody RoleToUserForm form){
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timeStamp(now())
+                        .data(of("assigned_role", userService.addRoleToUser(form.getEmail(), form.getRoleName())))
+                        .messange("Role assigned to user successfully")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build()
+        );
     }
 
     @PostMapping("/role/save")
-    public ResponseEntity<Role> saveRole(@RequestBody Role role) throws Exception{
-        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/role/save").toUriString());
-        return ResponseEntity.created(uri).body(userService.saveRole(role));
+    public ResponseEntity<Response> saveRole(@RequestBody Role role) throws Exception{
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timeStamp(now())
+                        .data(of("role", userService.saveRole(role)))
+                        .messange("Role created successfully")
+                        .status(CREATED)
+                        .statusCode(CREATED.value())
+                        .build()
+        );
     }
 
     @GetMapping("/token/refresh")

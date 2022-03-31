@@ -57,11 +57,15 @@ public class UserService implements UserDetailsService {
         return roleRepository.save(role);
     }
 
-    public void addRoleToUser(String email, String roleName){
+    public String addRoleToUser(String email, String roleName){
         User user = userRepository.findByEmail(email);
         Role role = roleRepository.findByName(roleName);
-
-        user.getRoles().add(role); //Due to Transactional library we don't need to call userRepo to save the user
+        try {
+            user.getRoles().add(role); //Due to Transactional library we don't need to call userRepo to save the user
+            return "User: " + email + " assigned to: " + roleName;
+        }catch (Exception e){
+            return "Error assigning role to user";
+        }
     }
 
     public User getUser(String email){
