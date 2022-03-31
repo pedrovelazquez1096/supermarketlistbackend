@@ -5,6 +5,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pvelazquez.supermarketlistbackend.Models.Response;
 import com.pvelazquez.supermarketlistbackend.Models.Role;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Services.UserService;
@@ -22,8 +23,10 @@ import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.time.LocalDateTime.now;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
+import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
@@ -33,8 +36,16 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public ResponseEntity<List<User>> getUsers(){
-        return ResponseEntity.ok().body(userService.getUsers());
+    public ResponseEntity<Response> getUsers(){
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timeStamp(now())
+                        .data(Map.of("Users", userService.getUsers()))
+                        .messange("Users retrieved")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build()
+        );
     }
 
     @PostMapping("/user/save")
