@@ -148,7 +148,7 @@ public class UserController {
             log.info("user found, account status: {}", user.getIsLocked());
             if(user.getIsLocked()) {
                 user.setVerificationCode(utility.generateVerificationCode());
-                user.setCodeExpirationDate(utility.generate10MinCode());
+                user.setCodeExpirationDate(utility.generate10MinExpirationDate());
                 user = userService.updateUser(user, user.getId());
                 emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
                 log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
@@ -165,8 +165,8 @@ public class UserController {
                 return ResponseEntity.ok(
                         Response.builder()
                                 .timeStamp(now())
-                                .data(of("error","Account already in unlocked"))
-                                .messange("Account already in unlocked")
+                                .data(of("error","Account already unlocked"))
+                                .messange("Account already unlocked")
                                 .status(CONFLICT)
                                 .statusCode(CONFLICT.value())
                                 .build()
@@ -211,6 +211,7 @@ public class UserController {
                                         .data(of("error","Confirmation code incorrect"))
                                         .messange("Confirmation code incorrect")
                                         .status(NOT_ACCEPTABLE)
+                                        .statusCode(NOT_ACCEPTABLE.value())
                                         .statusCode(NOT_ACCEPTABLE.value())
                                         .build()
                         );

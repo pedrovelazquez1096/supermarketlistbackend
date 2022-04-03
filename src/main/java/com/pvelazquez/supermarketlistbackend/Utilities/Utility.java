@@ -77,7 +77,7 @@ public class Utility {
         return Integer.toString(generator.nextInt(10000));
     }
 
-    public Timestamp generate10MinCode(){
+    public Timestamp generate10MinExpirationDate(){
         return new Timestamp(System.currentTimeMillis() + 600000);
     }
 
@@ -112,7 +112,7 @@ public class Utility {
         user.setLanguage(userSignUp.getLanguage());
         user.setIsLocked(true);
         user.setVerificationCode(generateVerificationCode());
-        user.setCodeExpirationDate(generate10MinCode());
+        user.setCodeExpirationDate(generate10MinExpirationDate());
         user.setRoles(new ArrayList<>());
         return user;
     }
