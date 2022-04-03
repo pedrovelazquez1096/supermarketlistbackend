@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -22,6 +23,9 @@ public class User {
     private String password;
     private String country;
     private String language;
+    private Boolean isLocked;
+    private String verificationCode;
+    private Timestamp codeExpirationDate;
     @ManyToMany(fetch = EAGER)
     private Collection<Role> roles = new ArrayList<>();
 }

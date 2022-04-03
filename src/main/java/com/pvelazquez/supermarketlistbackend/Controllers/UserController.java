@@ -8,12 +8,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pvelazquez.supermarketlistbackend.Models.Response;
 import com.pvelazquez.supermarketlistbackend.Models.Role;
 import com.pvelazquez.supermarketlistbackend.Models.User;
+import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
+import com.pvelazquez.supermarketlistbackend.Utilities.EmailSender;
 import com.pvelazquez.supermarketlistbackend.Services.UserService;
 import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,11 +32,14 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
+@Slf4j
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final EmailSender emailSender;
+    private final Utility utility = Utility.getInstance();
 
     @GetMapping("/users")
     public ResponseEntity<Response> getUsers(){
@@ -58,6 +65,73 @@ public class UserController {
                         .statusCode(CREATED.value())
                         .build()
         );
+    }
+
+    @PostMapping("/signup/registration")
+    public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
+        if(!utility.validateEmail(userSignUpForm.getEmail()))
+            return ResponseEntity.badRequest().body("Invalid Email");
+        if(utility.validatePassword(userSignUpForm.getPassword()) != null)
+            return ResponseEntity.badRequest().body(utility.validatePassword(userSignUpForm.getPassword()));
+
+        User user = userService.getUser(userSignUpForm.getEmail());
+        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
+
+        if(user == null)
+        {
+            user = utility.convertUserSignUpToUserModel(userSignUpForm);
+            emailSender.sendEmail(user.getEmail(), "Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(), user.getVerificationCode()), user.getVerificationCode()));
+            user = userService.saveUser(user);
+            userService.addRoleToUser(user.getEmail(), "USER");
+            log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
+            return ResponseEntity.created(uri).body("Please check your email for the verification code");
+        }else
+            return ResponseEntity.status(CONFLICT).body("Email already in use");
+    }
+
+    @PostMapping("/signup/newcode")
+    public ResponseEntity<?> sendNewVerificationCode(@RequestParam("email")String email) throws Exception {
+        if(!utility.validateEmail(email))
+            return ResponseEntity.badRequest().body("Invalid Email");
+        User user = userService.getUser(email);
+        if(user == null){
+            return ResponseEntity.notFound().build();
+        }else {
+            log.info("user found, account status: {}", user.getIsLocked());
+            if(user.getIsLocked()) {
+                user.setVerificationCode(utility.generateVerificationCode());
+                user.setCodeExpirationDate(utility.generate10MinCode());
+                user = userService.updateUser(user, user.getId());
+                emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
+                log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
+                return ResponseEntity.accepted().body("Please check your email for the verification code");
+            }else
+                return ResponseEntity.status(CONFLICT).body("Account already in unlocked");
+        }
+    }
+
+    @GetMapping("/signup/confirmation")
+    public ResponseEntity<?> unlockAccount(@RequestParam("email")String email, @RequestParam("code")String code) throws Exception {
+        if(!utility.validateEmail(email))
+            return ResponseEntity.badRequest().body("Invalid Email");
+        User user = userService.getUser(email);
+        if(user != null){
+            if(user.getIsLocked())
+                if(user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
+                    if(user.getVerificationCode().equals(code)){
+                        user.setIsLocked(false);
+                        log.info("User: {} unlocked they account", user.getEmail());
+                        user = userService.updateUser(user, user.getId());
+                        emailSender.sendEmail(user.getEmail(),"Account Activated", utility.buildBodyEmailActivation(user.getName()));
+                        return ResponseEntity.accepted().body("Activated");
+                    }else
+                        return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
+                else
+                    return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code has expired");
+            else
+                return ResponseEntity.status(CONFLICT).body("Account already unlocked");
+        }else
+            return ResponseEntity.notFound().build();
     }
 
     @PostMapping("/user/assignRole")
