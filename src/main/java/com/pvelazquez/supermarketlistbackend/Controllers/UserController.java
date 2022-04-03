@@ -183,16 +183,28 @@ public class UserController {
                 Map<String, String> tokens = new HashMap<>();
                 tokens.put("access_token", accessToken);
                 tokens.put("refresh_token", refreshToken);
+                Response response1 = new Response();
+                response1.setStatusCode(200);
+                response1.setStatus(OK);
+                response1.setMessange("Tokens generated");
+                response1.setData(tokens);
                 res.setContentType(APPLICATION_JSON_VALUE);
-                new ObjectMapper().writeValue(res.getOutputStream(),tokens);
+                new ObjectMapper().writeValue(res.getOutputStream(),response1);
             }catch (Exception e){
                 res.setHeader("error", e.getMessage());
                 res.setStatus(FORBIDDEN.value());
-                //res.sendError(FORBIDDEN.value());
+
                 Map<String, String> error = new HashMap<>();
                 error.put("error_message", e.getMessage());
+
+                Response response1 = new Response();
+                response1.setStatusCode(FORBIDDEN.value());
+                response1.setStatus(FORBIDDEN);
+                response1.setMessange("Error generating token");
+                response1.setData(error);
+
                 res.setContentType(APPLICATION_JSON_VALUE);
-                new ObjectMapper().writeValue(res.getOutputStream(),error);
+                new ObjectMapper().writeValue(res.getOutputStream(),response1);
             }
         }else {
             throw new RuntimeException("Refresh token is missing");
