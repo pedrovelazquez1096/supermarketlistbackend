@@ -70,9 +70,25 @@ public class UserController {
     @PostMapping("/signup/registration")
     public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
         if(!utility.validateEmail(userSignUpForm.getEmail()))
-            return ResponseEntity.badRequest().body("Invalid Email");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error", "Invalid Email"))
+                            .messange("Invalid Email")
+                            .status(BAD_REQUEST)
+                            .statusCode(BAD_REQUEST.value())
+                            .build()
+            );
         if(utility.validatePassword(userSignUpForm.getPassword()) != null)
-            return ResponseEntity.badRequest().body(utility.validatePassword(userSignUpForm.getPassword()));
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error", utility.validatePassword(userSignUpForm.getPassword())))
+                            .messange(utility.validatePassword(userSignUpForm.getPassword()))
+                            .status(BAD_REQUEST)
+                            .statusCode(BAD_REQUEST.value())
+                            .build()
+            );
 
         User user = userService.getUser(userSignUpForm.getEmail());
         URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
@@ -84,18 +100,50 @@ public class UserController {
             user = userService.saveUser(user);
             userService.addRoleToUser(user.getEmail(), "USER");
             log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
-            return ResponseEntity.created(uri).body("Please check your email for the verification code");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("data", "Please check your email for the verification code"))
+                            .messange("Please check your email for the verification code")
+                            .status(CREATED)
+                            .statusCode(CREATED.value())
+                            .build()
+            );
         }else
-            return ResponseEntity.status(CONFLICT).body("Email already in use");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error","Email already in use"))
+                            .messange("Email already in use")
+                            .status(CONFLICT)
+                            .statusCode(CONFLICT.value())
+                            .build()
+            );
     }
 
     @PostMapping("/signup/newcode")
     public ResponseEntity<?> sendNewVerificationCode(@RequestParam("email")String email) throws Exception {
         if(!utility.validateEmail(email))
-            return ResponseEntity.badRequest().body("Invalid Email");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error","Invalid Email"))
+                            .messange("Invalid Email")
+                            .status(BAD_REQUEST)
+                            .statusCode(BAD_REQUEST.value())
+                            .build()
+            );
         User user = userService.getUser(email);
         if(user == null){
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error","User not found"))
+                            .messange("User not found")
+                            .status(NOT_FOUND)
+                            .statusCode(NOT_FOUND.value())
+                            .build()
+            );
         }else {
             log.info("user found, account status: {}", user.getIsLocked());
             if(user.getIsLocked()) {
@@ -104,16 +152,40 @@ public class UserController {
                 user = userService.updateUser(user, user.getId());
                 emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
                 log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
-                return ResponseEntity.accepted().body("Please check your email for the verification code");
+                return ResponseEntity.ok(
+                        Response.builder()
+                                .timeStamp(now())
+                                .data(of("data","Please check your email for the verification code"))
+                                .messange("Please check your email for the verification code")
+                                .status(ACCEPTED)
+                                .statusCode(ACCEPTED.value())
+                                .build()
+                );
             }else
-                return ResponseEntity.status(CONFLICT).body("Account already in unlocked");
+                return ResponseEntity.ok(
+                        Response.builder()
+                                .timeStamp(now())
+                                .data(of("error","Account already in unlocked"))
+                                .messange("Account already in unlocked")
+                                .status(CONFLICT)
+                                .statusCode(CONFLICT.value())
+                                .build()
+                );
         }
     }
 
     @GetMapping("/signup/confirmation")
     public ResponseEntity<?> unlockAccount(@RequestParam("email")String email, @RequestParam("code")String code) throws Exception {
         if(!utility.validateEmail(email))
-            return ResponseEntity.badRequest().body("Invalid Email");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error","Invalid Email"))
+                            .messange("Invalid Email")
+                            .status(BAD_REQUEST)
+                            .statusCode(BAD_REQUEST.value())
+                            .build()
+            );
         User user = userService.getUser(email);
         if(user != null){
             if(user.getIsLocked())
@@ -123,15 +195,55 @@ public class UserController {
                         log.info("User: {} unlocked they account", user.getEmail());
                         user = userService.updateUser(user, user.getId());
                         emailSender.sendEmail(user.getEmail(),"Account Activated", utility.buildBodyEmailActivation(user.getName()));
-                        return ResponseEntity.accepted().body("Activated");
+                        return ResponseEntity.ok(
+                                Response.builder()
+                                        .timeStamp(now())
+                                        .data(of("data","Account Activated"))
+                                        .messange("Account Activated")
+                                        .status(ACCEPTED)
+                                        .statusCode(ACCEPTED.value())
+                                        .build()
+                        );
                     }else
-                        return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code incorrect");
+                        return ResponseEntity.ok(
+                                Response.builder()
+                                        .timeStamp(now())
+                                        .data(of("error","Confirmation code incorrect"))
+                                        .messange("Confirmation code incorrect")
+                                        .status(NOT_ACCEPTABLE)
+                                        .statusCode(NOT_ACCEPTABLE.value())
+                                        .build()
+                        );
                 else
-                    return ResponseEntity.status(NOT_ACCEPTABLE).body("Confirmation code has expired");
+                    return ResponseEntity.ok(
+                            Response.builder()
+                                    .timeStamp(now())
+                                    .data(of("error","Confirmation code has expired"))
+                                    .messange("Confirmation code has expired")
+                                    .status(NOT_ACCEPTABLE)
+                                    .statusCode(NOT_ACCEPTABLE.value())
+                                    .build()
+                    );
             else
-                return ResponseEntity.status(CONFLICT).body("Account already unlocked");
+                return ResponseEntity.ok(
+                        Response.builder()
+                                .timeStamp(now())
+                                .data(of("error","Account already unlocked"))
+                                .messange("Account already unlocked")
+                                .status(CONFLICT)
+                                .statusCode(CONFLICT.value())
+                                .build()
+                );
         }else
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("error","User Not Found"))
+                            .messange("User Not Found")
+                            .status(NOT_FOUND)
+                            .statusCode(NOT_FOUND.value())
+                            .build()
+            );
     }
 
     @PostMapping("/user/assignRole")
