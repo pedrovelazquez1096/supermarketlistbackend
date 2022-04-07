@@ -53,12 +53,13 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
         String refreshToken = utility.getRefreshToken(request, user, algorithm);
 
         Map<String, String> tokens = new HashMap<>();
+        tokens.put("user", user.getUsername());
         tokens.put("access_token", accessToken);
         tokens.put("refresh_token", refreshToken);
         Response response1 = new Response();
         response1.setStatusCode(200);
         response1.setStatus(OK);
-        response1.setMessange("Tokens generated");
+        response1.setMessange("Logged in");
         response1.setData(tokens);
         response.setContentType(APPLICATION_JSON_VALUE);
         new ObjectMapper().writeValue(response.getOutputStream(),response1);

@@ -5,8 +5,10 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pvelazquez.supermarketlistbackend.Models.Response;
 import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +26,7 @@ import java.util.Map;
 
 import static java.util.Arrays.stream;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
@@ -57,15 +60,32 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
                     log.info("Error logging in: {}", e.getMessage());
                     res.setHeader("error", e.getMessage());
                     res.setStatus(FORBIDDEN.value());
-                    //res.sendError(FORBIDDEN.value());
-                    Map<String, String> error = new HashMap<>();
-                    error.put("error_message", e.getMessage());
+
+                    Response response1 = createResponse(e.getMessage(),FORBIDDEN,"Error while validating token");
+
                     res.setContentType(APPLICATION_JSON_VALUE);
-                    new ObjectMapper().writeValue(res.getOutputStream(),error);
+                    new ObjectMapper().writeValue(res.getOutputStream(),response1);
                 }
             }else {
-                filterChain.doFilter(req,res);
+                Response response1 = createResponse("Bearer token not found",BAD_REQUEST,"Token doesn't begins with Bearer");
+
+                res.setContentType(APPLICATION_JSON_VALUE);
+                new ObjectMapper().writeValue(res.getOutputStream(),response1);
             }
         }
     }
+
+    private Response createResponse(String error, HttpStatus httpStatus, String msg){
+        Map<String, String> errorMap = new HashMap<>();
+        errorMap.put("error", error);
+        Response response1 = new Response();
+
+        response1.setStatusCode(httpStatus.value());
+        response1.setStatus(httpStatus);
+        response1.setMessange(msg);
+        response1.setData(errorMap);
+
+        return response1;
+    }
 }
+

@@ -54,6 +54,47 @@ public class UserController {
         );
     }
 
+    @GetMapping("/users/me")
+    public ResponseEntity<Response> getMe(HttpServletRequest req, HttpServletResponse res){
+        String authorizationHeader = req.getHeader(AUTHORIZATION);
+        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
+            String refreshToken = authorizationHeader.substring("Bearer ".length());
+            Utility utility = Utility.getInstance();
+            Algorithm algorithm = utility.getAlgorithm();
+            JWTVerifier verifier = JWT.require(algorithm).build();
+            DecodedJWT decodedJWT = verifier.verify(refreshToken);
+            String email = decodedJWT.getSubject();
+            User user = userService.getUser(email);
+            user.setPassword("");
+            user.setVerificationCode("");
+            return ResponseEntity.ok(
+                    Response.builder()
+                            .timeStamp(now())
+                            .data(of("me",user))
+                            .messange("user retrieved")
+                            .status(OK)
+                            .statusCode(OK.value())
+                            .build()
+            );
+        }else {
+            throw new RuntimeException("Token is missing");
+        }
+    }
+
+    @PostMapping("/user/delete/{email}")
+    public ResponseEntity<Response> deleteUser(@PathVariable String email){
+        String msgCode = userService.deleteUser(email);
+        return ResponseEntity.ok(
+                Response.builder()
+                        .timeStamp(now())
+                        .data(of("user",msgCode))
+                        .messange(msgCode)
+                        .status(ACCEPTED)
+                        .statusCode(ACCEPTED.value())
+                        .build()
+        );
+    }
+
     @PostMapping("/user/save")
     public ResponseEntity<Response> saveUser(@RequestBody User user) throws Exception{
         return ResponseEntity.ok(
@@ -74,7 +115,7 @@ public class UserController {
                     Response.builder()
                             .timeStamp(now())
                             .data(of("error", "Invalid Email"))
-                            .messange("Invalid Email")
+                            .messange("invalid email")
                             .status(BAD_REQUEST)
                             .statusCode(BAD_REQUEST.value())
                             .build()
@@ -84,14 +125,13 @@ public class UserController {
                     Response.builder()
                             .timeStamp(now())
                             .data(of("error", utility.validatePassword(userSignUpForm.getPassword())))
-                            .messange(utility.validatePassword(userSignUpForm.getPassword()))
+                            .messange("invalid password")
                             .status(BAD_REQUEST)
                             .statusCode(BAD_REQUEST.value())
                             .build()
             );
 
         User user = userService.getUser(userSignUpForm.getEmail());
-        URI uri = URI.create(ServletUriComponentsBuilder.fromCurrentContextPath().path("/api/signup/registration").toUriString());
 
         if(user == null)
         {
@@ -181,7 +221,7 @@ public class UserController {
                     Response.builder()
                             .timeStamp(now())
                             .data(of("error","Invalid Email"))
-                            .messange("Invalid Email")
+                            .messange("invalid email")
                             .status(BAD_REQUEST)
                             .statusCode(BAD_REQUEST.value())
                             .build()

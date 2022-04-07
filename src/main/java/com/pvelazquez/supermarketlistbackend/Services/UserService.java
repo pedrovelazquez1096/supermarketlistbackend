@@ -63,6 +63,15 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public String deleteUser(String email){
+        try {
+            userRepository.deleteByEmail(email);
+            return "user deleted";
+        }catch (Exception e){
+            return "user not found";
+        }
+    }
+
     public Role saveRole(Role role) throws Exception{
         Role roleTemp = roleRepository.findByName(role.getName());
         if(roleTemp != null)

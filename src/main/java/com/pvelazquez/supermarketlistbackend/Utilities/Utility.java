@@ -9,9 +9,7 @@ import org.springframework.security.core.GrantedAuthority;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Utility {
@@ -19,6 +17,7 @@ public class Utility {
     private static EmailValidator emailValidator = null;
     private static Random generator = null;
     private static final String domain = "http://localhost:8080";
+
     private Utility(){
 
     }
@@ -49,12 +48,12 @@ public class Utility {
         String upperCaseChars = "(.*[A-Z].*)";
         if (!password.matches(upperCaseChars ))
         {
-            isValid = "Password must have atleast one uppercase character";
+            isValid = "Password must have at least one uppercase character";
         }
         String lowerCaseChars = "(.*[a-z].*)";
         if (!password.matches(lowerCaseChars ))
         {
-            isValid = "Password must have atleast one lowercase character";
+            isValid = "Password must have at least one lowercase character";
         }
         String numbers = "(.*[0-9].*)";
         if (!password.matches(numbers ))
@@ -65,7 +64,7 @@ public class Utility {
         String specialChars = "(.*[@,#,$,%].*$)";
         if (!password.matches(specialChars ))
         {
-            isValid = "Password must have at least one special character among @#$%";
+            isValid = "Password must have at least one special character @#$%";
         }
         return isValid;
     }
