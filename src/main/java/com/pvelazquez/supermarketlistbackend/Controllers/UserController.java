@@ -81,7 +81,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/user/delete/{email}")
+    @DeleteMapping("/user/delete/{email}")
     public ResponseEntity<Response> deleteUser(@PathVariable String email){
         String msgCode = userService.deleteUser(email);
         return ResponseEntity.ok(
@@ -238,7 +238,7 @@ public class UserController {
                         return ResponseEntity.ok(
                                 Response.builder()
                                         .timeStamp(now())
-                                        .data(of("data","Account Activated"))
+                                        .data(of("data",user))
                                         .messange("Account Activated")
                                         .status(ACCEPTED)
                                         .statusCode(ACCEPTED.value())
