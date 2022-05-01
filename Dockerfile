@@ -25,4 +25,5 @@ COPY settings-docker.xml /usr/share/maven/ref/
 ENTRYPOINT ["/usr/local/bin/mvn-entrypoint.sh"]
 COPY . .
 RUN mvn clean package
+RUN ls
 CMD ["mvn"]
