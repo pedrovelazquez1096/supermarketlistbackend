@@ -28,4 +28,5 @@ RUN mvn clean package
 RUN ls
 RUN ls /target
 COPY /target/supermarketlistbackend-0.0.1-SNAPSHOT.jar ./build.jar
+RUN ls
 CMD ["java", "-jar", "build.jar"]
