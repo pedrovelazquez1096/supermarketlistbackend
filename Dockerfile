@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk-slim
+FROM openjdk:11-jdk-slim AS build
 
 RUN apt-get update \
   && apt-get install -y curl procps \
@@ -30,4 +30,8 @@ RUN ls /target
 COPY /target/supermarketlistbackend-0.0.1-SNAPSHOT.jar ./build.jar
 RUN rm -r /target
 RUN ls
-CMD ["java", "-jar", "build.jar"]
+
+FROM openjdk:11
+COPY --from=build /build.jar /usr/src/build.jar
+EXPOSE 8080
+CMD ["java", "-jar", "/usr/src/build.jar"]
