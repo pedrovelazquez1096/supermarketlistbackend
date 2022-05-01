@@ -26,4 +26,5 @@ ENTRYPOINT ["/usr/local/bin/mvn-entrypoint.sh"]
 COPY . .
 RUN mvn clean package
 RUN ls
+RUN pwd
 CMD ["mvn"]
