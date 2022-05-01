@@ -26,7 +26,6 @@ ENTRYPOINT ["/usr/local/bin/mvn-entrypoint.sh"]
 COPY . .
 RUN mvn clean package
 RUN ls
-WORKDIR /target
-COPY supermarketlistbackend-0.0.1-SNAPSHOT.jar build.jar
-RUN ls
+RUN ls /target
+#COPY supermarketlistbackend-0.0.1-SNAPSHOT.jar build.jar
 CMD ["java", "-jar", "build.jar"]
