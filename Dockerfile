@@ -25,11 +25,6 @@ COPY settings-docker.xml /usr/share/maven/ref/
 ENTRYPOINT ["/usr/local/bin/mvn-entrypoint.sh"]
 COPY . .
 RUN mvn clean package
-RUN ls
-RUN ls /target
-#COPY /target/supermarketlistbackend-0.0.1-SNAPSHOT.jar ./build.jar
-#RUN rm -r /target
-#RUN ls
 
 FROM openjdk:11
 COPY --from=build /target/supermarketlistbackend-0.0.1-SNAPSHOT.jar /usr/src/build.jar
