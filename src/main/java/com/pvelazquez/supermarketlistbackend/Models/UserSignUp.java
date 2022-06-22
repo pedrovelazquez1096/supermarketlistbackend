@@ -8,5 +8,6 @@ public class UserSignUp {
         private String email;
         private String password;
         private String country;
+        private String State;
         private String language;
 }

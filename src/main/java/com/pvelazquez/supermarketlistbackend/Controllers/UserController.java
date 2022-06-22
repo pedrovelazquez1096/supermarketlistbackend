@@ -17,12 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
+import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,15 +42,8 @@ public class UserController {
 
     @GetMapping("/users")
     public ResponseEntity<Response> getUsers(){
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timeStamp(now())
-                        .data(of("users", userService.getUsers()))
-                        .messange("Users retrieved")
-                        .status(OK)
-                        .statusCode(OK.value())
-                        .build()
-        );
+        return utility.createResponseEntity("users",
+                userService.getUsers(), "user retrived", OK);
     }
 
     @GetMapping("/users/me")
@@ -59,7 +51,7 @@ public class UserController {
         String authorizationHeader = req.getHeader(AUTHORIZATION);
         if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
             String refreshToken = authorizationHeader.substring("Bearer ".length());
-            Utility utility = Utility.getInstance();
+            //Utility utility = Utility.getInstance();
             Algorithm algorithm = utility.getAlgorithm();
             JWTVerifier verifier = JWT.require(algorithm).build();
             DecodedJWT decodedJWT = verifier.verify(refreshToken);
@@ -67,15 +59,7 @@ public class UserController {
             User user = userService.getUser(email);
             user.setPassword("");
             user.setVerificationCode("");
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("me",user))
-                            .messange("user retrieved")
-                            .status(OK)
-                            .statusCode(OK.value())
-                            .build()
-            );
+            return utility.createResponseEntity("me", user, "user retrieved", OK);
         }else {
             throw new RuntimeException("Token is missing");
         }
@@ -84,234 +68,89 @@ public class UserController {
     @DeleteMapping("/user/delete/{email}")
     public ResponseEntity<Response> deleteUser(@PathVariable String email){
         String msgCode = userService.deleteUser(email);
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timeStamp(now())
-                        .data(of("user",msgCode))
-                        .messange(msgCode)
-                        .status(ACCEPTED)
-                        .statusCode(ACCEPTED.value())
-                        .build()
-        );
+        return utility.createResponseEntity("user", msgCode, msgCode, ACCEPTED);
     }
 
     @PostMapping("/user/save")
     public ResponseEntity<Response> saveUser(@RequestBody User user) throws Exception{
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timeStamp(now())
-                        .data(of("user", userService.saveUser(user)))
-                        .messange("User created")
-                        .status(CREATED)
-                        .statusCode(CREATED.value())
-                        .build()
-        );
+        return utility.createResponseEntity("user", userService.saveUser(user), "user created", CREATED);
     }
 
     @PostMapping("/signup/registration")
     public ResponseEntity<?> signupUser(@RequestBody UserSignUp userSignUpForm) throws Exception {
         if(!utility.validateEmail(userSignUpForm.getEmail()))
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error", "Invalid Email"))
-                            .messange("invalid email")
-                            .status(BAD_REQUEST)
-                            .statusCode(BAD_REQUEST.value())
-                            .build()
-            );
+            return utility.createResponseEntity("error", "Invalid Email", "invalid email", BAD_REQUEST);
         if(utility.validatePassword(userSignUpForm.getPassword()) != null)
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error", utility.validatePassword(userSignUpForm.getPassword())))
-                            .messange("invalid password")
-                            .status(BAD_REQUEST)
-                            .statusCode(BAD_REQUEST.value())
-                            .build()
-            );
+            return utility.createResponseEntity("error", utility.validatePassword(userSignUpForm.getPassword()), "invalid password",NOT_ACCEPTABLE);
 
         User user = userService.getUser(userSignUpForm.getEmail());
 
-        if(user == null)
-        {
-            user = utility.convertUserSignUpToUserModel(userSignUpForm);
-            emailSender.sendEmail(user.getEmail(), "Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(), user.getVerificationCode()), user.getVerificationCode()));
-            user = userService.saveUser(user);
-            userService.addRoleToUser(user.getEmail(), "USER");
-            log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("data", "Please check your email for the verification code"))
-                            .messange("Please check your email for the verification code")
-                            .status(CREATED)
-                            .statusCode(CREATED.value())
-                            .build()
-            );
-        }else
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error","Email already in use"))
-                            .messange("Email already in use")
-                            .status(CONFLICT)
-                            .statusCode(CONFLICT.value())
-                            .build()
-            );
+        if(user != null)
+            return utility.createResponseEntity("error", "Email already in use", "Email already in use", CONFLICT);
+
+        user = userService.saveUser(utility.convertUserSignUpToUserModel(userSignUpForm));
+        emailSender.sendEmail(user.getEmail(), "Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(), user.getVerificationCode()), user.getVerificationCode()));
+        userService.addRoleToUser(user.getEmail(), "USER");
+        log.info("User: {} Verification code: {} expiration date: {}", user.getEmail(), user.getVerificationCode(), user.getCodeExpirationDate());
+        return utility.createResponseEntity("data", "Please check your email for the verification code",
+                "Please check your email for the verification code", ACCEPTED);
     }
 
     @PostMapping("/signup/newcode")
     public ResponseEntity<?> sendNewVerificationCode(@RequestParam("email")String email) throws Exception {
         if(!utility.validateEmail(email))
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error","Invalid Email"))
-                            .messange("Invalid Email")
-                            .status(BAD_REQUEST)
-                            .statusCode(BAD_REQUEST.value())
-                            .build()
-            );
+            return utility.createResponseEntity("error", "invalid email", "invalid email",BAD_REQUEST);
+
         User user = userService.getUser(email);
-        if(user == null){
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error","User not found"))
-                            .messange("User not found")
-                            .status(NOT_FOUND)
-                            .statusCode(NOT_FOUND.value())
-                            .build()
-            );
-        }else {
-            log.info("user found, account status: {}", user.getIsLocked());
-            if(user.getIsLocked()) {
-                user.setVerificationCode(utility.generateVerificationCode());
-                user.setCodeExpirationDate(utility.generate10MinExpirationDate());
-                user = userService.updateUser(user, user.getId());
-                emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
-                log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
-                return ResponseEntity.ok(
-                        Response.builder()
-                                .timeStamp(now())
-                                .data(of("data","Please check your email for the verification code"))
-                                .messange("Please check your email for the verification code")
-                                .status(ACCEPTED)
-                                .statusCode(ACCEPTED.value())
-                                .build()
-                );
-            }else
-                return ResponseEntity.ok(
-                        Response.builder()
-                                .timeStamp(now())
-                                .data(of("error","Account already unlocked"))
-                                .messange("Account already unlocked")
-                                .status(CONFLICT)
-                                .statusCode(CONFLICT.value())
-                                .build()
-                );
-        }
+        if(user == null)
+            return utility.createResponseEntity("error", "User not found", "user not found", NOT_FOUND);
+
+        log.info("user found, account status: {}", user.getIsLocked());
+        if(!user.getIsLocked())
+            return utility.createResponseEntity("error","Account already unlocked", "Account already unlocked", CONFLICT);
+
+        user.setVerificationCode(utility.generateVerificationCode());
+        user.setCodeExpirationDate(utility.generate10MinExpirationDate());
+        user = userService.updateUser(user, user.getId());
+        emailSender.sendEmail(user.getEmail(),"Confirm your email", utility.buildBodyEmailConfirmation(user.getName(), utility.generateActivationLink(user.getEmail(),user.getVerificationCode()), user.getVerificationCode()));
+        log.info("User {} resets verification code: {}", user.getEmail(), user.getVerificationCode());
+        return utility.createResponseEntity("data","Please check your email for the verification code",
+                "Please check your email for the verification code", ACCEPTED);
+
     }
 
     @GetMapping("/signup/confirmation")
     public ResponseEntity<?> unlockAccount(@RequestParam("email")String email, @RequestParam("code")String code) throws Exception {
         if(!utility.validateEmail(email))
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error","Invalid Email"))
-                            .messange("invalid email")
-                            .status(BAD_REQUEST)
-                            .statusCode(BAD_REQUEST.value())
-                            .build()
-            );
+            return utility.createResponseEntity("error","Invalid Email", "invalid email", BAD_REQUEST);
+
         User user = userService.getUser(email);
-        if(user != null){
-            if(user.getIsLocked())
-                if(user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
-                    if(user.getVerificationCode().equals(code)){
-                        user.setIsLocked(false);
-                        log.info("User: {} unlocked they account", user.getEmail());
-                        user = userService.updateUser(user, user.getId());
-                        emailSender.sendEmail(user.getEmail(),"Account Activated", utility.buildBodyEmailActivation(user.getName()));
-                        return ResponseEntity.ok(
-                                Response.builder()
-                                        .timeStamp(now())
-                                        .data(of("data",user))
-                                        .messange("Account Activated")
-                                        .status(ACCEPTED)
-                                        .statusCode(ACCEPTED.value())
-                                        .build()
-                        );
-                    }else
-                        return ResponseEntity.ok(
-                                Response.builder()
-                                        .timeStamp(now())
-                                        .data(of("error","Confirmation code incorrect"))
-                                        .messange("Confirmation code incorrect")
-                                        .status(NOT_ACCEPTABLE)
-                                        .statusCode(NOT_ACCEPTABLE.value())
-                                        .statusCode(NOT_ACCEPTABLE.value())
-                                        .build()
-                        );
-                else
-                    return ResponseEntity.ok(
-                            Response.builder()
-                                    .timeStamp(now())
-                                    .data(of("error","Confirmation code has expired"))
-                                    .messange("Confirmation code has expired")
-                                    .status(NOT_ACCEPTABLE)
-                                    .statusCode(NOT_ACCEPTABLE.value())
-                                    .build()
-                    );
-            else
-                return ResponseEntity.ok(
-                        Response.builder()
-                                .timeStamp(now())
-                                .data(of("error","Account already unlocked"))
-                                .messange("Account already unlocked")
-                                .status(CONFLICT)
-                                .statusCode(CONFLICT.value())
-                                .build()
-                );
-        }else
-            return ResponseEntity.ok(
-                    Response.builder()
-                            .timeStamp(now())
-                            .data(of("error","User Not Found"))
-                            .messange("User Not Found")
-                            .status(NOT_FOUND)
-                            .statusCode(NOT_FOUND.value())
-                            .build()
-            );
+
+        if(user == null)
+            return utility.createResponseEntity("error","User Not Found","User Not Found", NOT_FOUND);
+        if(!user.getIsLocked())
+            return utility.createResponseEntity("error","Account already unlocked","Account already unlocked", CONFLICT);
+        if(!user.getCodeExpirationDate().after(utility.getCurrentTimestamp()))
+            return utility.createResponseEntity("error","Confirmation code has expired", "Confirmation code has expired", NOT_ACCEPTABLE);
+        if(!user.getVerificationCode().equals(code))
+            return  utility.createResponseEntity("error","Confirmation code incorrect","Confirmation code incorrect", NOT_ACCEPTABLE);
+
+        user.setIsLocked(false);
+        user.setConfirmationDate(new Timestamp(System.currentTimeMillis()));
+        log.info("User: {} unlocked they account", user.getEmail());
+        user = userService.updateUser(user, user.getId());
+        emailSender.sendEmail(user.getEmail(),"Account Activated", utility.buildBodyEmailActivation(user.getName()));
+        return utility.createResponseEntity("data",user, "Account Activated", OK);
     }
 
     @PostMapping("/user/assignRole")
     public ResponseEntity<Response> assignRoleToUser(@RequestBody RoleToUserForm form){
-
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timeStamp(now())
-                        .data(of("assigned_role", userService.addRoleToUser(form.getEmail(), form.getRoleName())))
-                        .messange("Role assigned to user successfully")
-                        .status(OK)
-                        .statusCode(OK.value())
-                        .build()
-        );
+        return utility.createResponseEntity("assigned_role", userService.addRoleToUser(form.getEmail(), form.getRoleName()), "Role assigned to user successfully", OK);
     }
 
     @PostMapping("/role/save")
     public ResponseEntity<Response> saveRole(@RequestBody Role role) throws Exception{
-        return ResponseEntity.ok(
-                Response.builder()
-                        .timeStamp(now())
-                        .data(of("role", userService.saveRole(role)))
-                        .messange("Role created successfully")
-                        .status(CREATED)
-                        .statusCode(CREATED.value())
-                        .build()
-        );
+        return utility.createResponseEntity("role", userService.saveRole(role),"Role created successfully", CREATED);
     }
 
     @GetMapping("/token/refresh")
@@ -320,7 +159,7 @@ public class UserController {
         if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
             try {
                 String refreshToken = authorizationHeader.substring("Bearer ".length());
-                Utility utility = Utility.getInstance();
+                //Utility utility = Utility.getInstance();
                 Algorithm algorithm = utility.getAlgorithm();
                 JWTVerifier verifier = JWT.require(algorithm).build();
                 DecodedJWT decodedJWT = verifier.verify(refreshToken);
@@ -333,16 +172,18 @@ public class UserController {
                         .withIssuer(req.getRequestURL().toString())
                         .withClaim("roles",user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
                         .sign(algorithm);
+
                 Map<String, String> tokens = new HashMap<>();
+                Response response1 = new Response();
                 tokens.put("access_token", accessToken);
                 tokens.put("refresh_token", refreshToken);
-                Response response1 = new Response();
                 response1.setStatusCode(200);
                 response1.setStatus(OK);
                 response1.setMessange("Tokens generated");
                 response1.setData(tokens);
                 res.setContentType(APPLICATION_JSON_VALUE);
                 new ObjectMapper().writeValue(res.getOutputStream(),response1);
+
             }catch (Exception e){
                 res.setHeader("error", e.getMessage());
                 res.setStatus(FORBIDDEN.value());

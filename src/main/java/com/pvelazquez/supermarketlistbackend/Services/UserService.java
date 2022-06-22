@@ -25,19 +25,16 @@ public class UserService implements UserDetailsService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        log.info("Usuario con email {}", email);
         User user = userRepository.findByEmail(email);
 
         if(user == null) {
-            log.error("Usuario con email {} no encontrado", email);
             throw new UsernameNotFoundException("User not found in the database");
         }else if(user.getIsLocked()){
-            log.error("Usuario con email {} existe pero tiene la cuenta sin confirmar", user.getEmail());
             throw new UsernameNotFoundException("User found in the database yet not confirmed");
         }else {
-            log.info("Usuario nombre {} email {}", user.getName(), user.getEmail());
             Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
             user.getRoles().forEach(role -> authorities.add(new SimpleGrantedAuthority(role.getName())));
             return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);
@@ -96,5 +93,15 @@ public class UserService implements UserDetailsService {
 
     public List<User> getUsers(){
         return userRepository.findAll();
+    }
+
+    public User addProfileImageToUser(String email, String profileImageURL)throws Exception{
+        User userTemp = userRepository.findByEmail(email);
+        if(userTemp == null)
+            throw new Exception("User not found");
+
+        userTemp.setProfileImageURL(profileImageURL);
+
+        return userRepository.save(userTemp);
     }
 }
