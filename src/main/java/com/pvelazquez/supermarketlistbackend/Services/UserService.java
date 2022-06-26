@@ -116,7 +116,7 @@ public class UserService implements UserDetailsService {
             String token = authorizationHeader.substring("Bearer ".length());
             Utility utility = Utility.getInstance();
             User user = getUser(JWT.require(utility.getAlgorithm()).build().verify(token).getSubject());
-            user.setPassword("");
+            //user.setPassword("");
             user.setVerificationCode("");
             return user;
         }else {
