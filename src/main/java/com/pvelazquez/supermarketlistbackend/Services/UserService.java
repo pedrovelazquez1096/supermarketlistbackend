@@ -1,10 +1,15 @@
 package com.pvelazquez.supermarketlistbackend.Services;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.pvelazquez.supermarketlistbackend.Models.Role;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Repositories.RoleRepository;
 import com.pvelazquez.supermarketlistbackend.Repositories.UserRepository;
 
+import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,9 +20,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpStatus.OK;
 
 @Service @RequiredArgsConstructor @Transactional @Slf4j
 public class UserService implements UserDetailsService {
@@ -94,14 +103,24 @@ public class UserService implements UserDetailsService {
     public List<User> getUsers(){
         return userRepository.findAll();
     }
+    
+    public User addProfileImageToUser(User user, String profileImageURL)throws Exception{
+        user.setProfileImageURL(profileImageURL);
 
-    public User addProfileImageToUser(String email, String profileImageURL)throws Exception{
-        User userTemp = userRepository.findByEmail(email);
-        if(userTemp == null)
-            throw new Exception("User not found");
-
-        userTemp.setProfileImageURL(profileImageURL);
-
-        return userRepository.save(userTemp);
+        return userRepository.save(user);
+    }
+    
+    public User getUserByToken(HttpServletRequest req){
+        String authorizationHeader = req.getHeader(AUTHORIZATION);
+        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
+            String token = authorizationHeader.substring("Bearer ".length());
+            Utility utility = Utility.getInstance();
+            User user = getUser(JWT.require(utility.getAlgorithm()).build().verify(token).getSubject());
+            user.setPassword("");
+            user.setVerificationCode("");
+            return user;
+        }else {
+            throw new RuntimeException("Token is missing");
+        }
     }
 }

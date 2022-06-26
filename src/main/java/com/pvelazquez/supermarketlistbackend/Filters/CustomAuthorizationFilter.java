@@ -37,7 +37,8 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
         if(req.getServletPath().equals("/api/signin") || req.getServletPath().equals("/api/token/refresh") ||
                 req.getServletPath().equals("/api/signup/registration") ||
                 req.getServletPath().equals("/api/signup/confirmation") ||
-                req.getServletPath().equals("/api/signup/newcode")){
+                req.getServletPath().equals("/api/signup/newcode") ||
+                (req.getServletPath().contains("/api/images/profile") && (!req.getServletPath().contains("/api/images/profile/add")))){
             filterChain.doFilter(req,res);
         }else{
             String authorizationHeader = req.getHeader(AUTHORIZATION);

@@ -35,7 +35,7 @@ public class ProfileImageService {
         profileImage.setSize(file.getSize());
 
         profileImage = profileImageRepository.insert(profileImage);
-        return "http://" + DOMAIN + "/api/images/profile/download/" + profileImage.getId();
+        return profileImage.getId();
     }
 
     public Optional<ProfileImage> getProfileImage(String id){

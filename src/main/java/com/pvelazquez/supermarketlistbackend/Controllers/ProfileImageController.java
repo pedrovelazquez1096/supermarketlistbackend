@@ -13,6 +13,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Base64;
 
 import static java.time.LocalDateTime.now;
@@ -31,18 +33,16 @@ public class ProfileImageController {
     private UserService userService;
 
     @PostMapping("/add")
-    public ResponseEntity<Response> addProfileImage(@RequestParam("image") MultipartFile image, @RequestParam String email) throws Exception {
-        User user = userService.getUser(email);
+    public ResponseEntity<Response> addProfileImage(@RequestParam("image") MultipartFile image, HttpServletRequest req, HttpServletResponse res) throws Exception {
+        User user = userService.getUserByToken(req);
 
-        System.out.println(user.getProfileImageURL()!= null);
-        System.out.println(!user.getProfileImageURL().isEmpty());
         if(!user.getProfileImageURL().isEmpty()) {
-            String imageId = user.getProfileImageURL().split("/")[7];
+            String imageId = user.getProfileImageURL();
             user.setProfileImageURL("");
             profileImageService.deleteProfileImage(imageId);
         }
 
-        user = userService.addProfileImageToUser(email, profileImageService.addProfileImage(image));
+        user = userService.addProfileImageToUser(user, profileImageService.addProfileImage(image));
         return utility.createResponseEntity("profileImageURL", user.getProfileImageURL(), "User profile image assigned to " + user.getEmail(), OK);
     }
 

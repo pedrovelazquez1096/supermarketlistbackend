@@ -48,21 +48,9 @@ public class UserController {
 
     @GetMapping("/users/me")
     public ResponseEntity<Response> getMe(HttpServletRequest req, HttpServletResponse res){
-        String authorizationHeader = req.getHeader(AUTHORIZATION);
-        if(authorizationHeader != null && authorizationHeader.startsWith("Bearer ")){
-            String refreshToken = authorizationHeader.substring("Bearer ".length());
-            //Utility utility = Utility.getInstance();
-            Algorithm algorithm = utility.getAlgorithm();
-            JWTVerifier verifier = JWT.require(algorithm).build();
-            DecodedJWT decodedJWT = verifier.verify(refreshToken);
-            String email = decodedJWT.getSubject();
-            User user = userService.getUser(email);
-            user.setPassword("");
-            user.setVerificationCode("");
-            return utility.createResponseEntity("me", user, "user retrieved", OK);
-        }else {
-            throw new RuntimeException("Token is missing");
-        }
+        User user = userService.getUserByToken(req);
+
+        return utility.createResponseEntity("me", user, "user retrieved", OK);
     }
 
     @DeleteMapping("/user/delete/{email}")
