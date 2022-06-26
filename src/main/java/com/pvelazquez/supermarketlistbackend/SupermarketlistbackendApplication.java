@@ -20,21 +20,21 @@ public class SupermarketlistbackendApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SupermarketlistbackendApplication.class, args);
 	}
-/*
+	/*
 	@Bean
 	CommandLineRunner run(UserService userService){
 		return args -> {
 			userService.saveRole(new Role(null,"ADMIN"));
 			userService.saveRole(new Role(null,"USER"));
 			log.info("Roles added");
-			userService.saveUser(new User(null,"Pedro", "admin@mail.com","1234","Mexico","Español", false, "1234", new Timestamp(System.currentTimeMillis()),new ArrayList<>()));
+			userService.saveUser(new User(null,"Pedro", "admin@mail.com","1234","Mexico","Queretaro","Español", false, "1234", new Timestamp(System.currentTimeMillis()),new Timestamp(System.currentTimeMillis()),new Timestamp(System.currentTimeMillis()),"",new ArrayList<>()));
 			log.info("Admin added");
 			userService.addRoleToUser("admin@mail.com", "ADMIN");
 			userService.addRoleToUser("admin@mail.com", "USER");
 			log.info("Roles added to admin");
 		};
 	}
-*/
+	*/
 	@Bean
 	PasswordEncoder passwordEncoder(){
 		return new BCryptPasswordEncoder();

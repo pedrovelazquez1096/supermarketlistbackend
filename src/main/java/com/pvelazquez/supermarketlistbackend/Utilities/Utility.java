@@ -2,15 +2,21 @@ package com.pvelazquez.supermarketlistbackend.Utilities;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.pvelazquez.supermarketlistbackend.Models.Response;
 import com.pvelazquez.supermarketlistbackend.Models.User;
 import com.pvelazquez.supermarketlistbackend.Models.UserSignUp;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
 
 import javax.servlet.http.HttpServletRequest;
 import java.sql.Timestamp;
 import java.util.*;
+import static java.util.Map.*;
 import java.util.stream.Collectors;
+
+import static java.time.LocalDateTime.now;
 
 public class Utility {
     private static Utility utility_instance = null;
@@ -72,8 +78,11 @@ public class Utility {
     public String generateVerificationCode(){
         if(generator == null)
             generator = new Random();
-
-        return Integer.toString(generator.nextInt(10000));
+        String verificationCode;
+        do{
+            verificationCode = Integer.toString(generator.nextInt(10000));
+        }while(verificationCode.length() < 4);
+        return verificationCode;
     }
 
     public Timestamp generate10MinExpirationDate(){
@@ -108,10 +117,14 @@ public class Utility {
         user.setEmail(userSignUp.getEmail());
         user.setPassword(userSignUp.getPassword());
         user.setCountry(userSignUp.getCountry());
+        user.setState(userSignUp.getState());
         user.setLanguage(userSignUp.getLanguage());
         user.setIsLocked(true);
         user.setVerificationCode(generateVerificationCode());
         user.setCodeExpirationDate(generate10MinExpirationDate());
+        user.setJoiningDate(new Timestamp(System.currentTimeMillis()));
+        user.setConfirmationDate(null);
+        user.setProfileImageURL("");
         user.setRoles(new ArrayList<>());
         return user;
     }
@@ -256,5 +269,38 @@ public class Utility {
                 "  </tbody></table><div class=\"yj6qo\"></div><div class=\"adL\">\n" +
                 "\n" +
                 "</div></div>";
+    }
+
+    public ResponseEntity<Response> createResponseEntity(String dataName, Object data,
+                                                         String message, HttpStatus status){
+        return ResponseEntity.ok(createResponse(dataName, data, message, status));
+    }
+
+    private ResponseEntity<Response> createResponseEntityWithDevMessage(String dataName, Object data,
+                                                         String message, String developerMessage, HttpStatus status){
+        return ResponseEntity.ok(createReponseWithDevMessage(dataName, data, message, developerMessage, status));
+    }
+
+    public Response createResponse(String dataName, Object data,
+                                   String message, HttpStatus status){
+        return Response.builder()
+                .timeStamp(now())
+                .data(of(dataName, data))
+                .messange(message)
+                .status(status)
+                .statusCode(status.value())
+                .build();
+    }
+
+    private Response createReponseWithDevMessage(String dataName, Object data,
+                                                 String message, String devMessage, HttpStatus status){
+        return Response.builder()
+                .timeStamp(now())
+                .data(of(dataName, data))
+                .messange(message)
+                .developerMassage(devMessage)
+                .status(status)
+                .statusCode(status.value())
+                .build();
     }
 }

@@ -3,6 +3,7 @@ services:
   springboot-app:
     stdin_open: true
     tty: true
+    restart: always
     build:
       context: .
       dockerfile: Dockerfile

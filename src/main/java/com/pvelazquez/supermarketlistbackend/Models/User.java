@@ -22,10 +22,14 @@ public class User {
     private String email;
     private String password;
     private String country;
+    private String state;
     private String language;
     private Boolean isLocked;
     private String verificationCode;
     private Timestamp codeExpirationDate;
+    private Timestamp joiningDate;
+    private Timestamp confirmationDate;
+    private String profileImageURL;
     @ManyToMany(fetch = EAGER)
     private Collection<Role> roles = new ArrayList<>();
 }
