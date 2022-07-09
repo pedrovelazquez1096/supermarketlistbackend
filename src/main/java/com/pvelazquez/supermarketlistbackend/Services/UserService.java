@@ -60,6 +60,15 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    public User updateUserPassword(User user, String newPassword) throws Exception {
+        try {
+            user.setPassword(passwordEncoder.encode(newPassword));
+            return userRepository.save(user);
+        }catch (Exception e){
+            throw new Exception("Password not modified");
+        }
+    }
+
     public User updateUser(User user, Long id) throws Exception {
         if (userRepository.findById(id).isPresent()) {
             user.setId(id);
@@ -68,6 +77,15 @@ public class UserService implements UserDetailsService {
             throw new Exception("User not found");
         }
     }
+
+    public User updateUser(User user) throws Exception {
+       try{
+            return userRepository.save(user);
+        } catch(Exception e) {
+            throw new Exception("User not found");
+        }
+    }
+
 
     public String deleteUser(String email){
         try {
@@ -104,7 +122,7 @@ public class UserService implements UserDetailsService {
         return userRepository.findAll();
     }
     
-    public User addProfileImageToUser(User user, String profileImageURL)throws Exception{
+    public User addProfileImageToUser(User user, String profileImageURL) {
         user.setProfileImageURL(profileImageURL);
 
         return userRepository.save(user);

@@ -46,6 +46,24 @@ public class ProfileImageController {
         return utility.createResponseEntity("profileImageURL", user.getProfileImageURL(), "User profile image assigned to " + user.getEmail(), OK);
     }
 
+    @PutMapping("/update")
+    public ResponseEntity<Response> updateProfileImage(@RequestParam("image") MultipartFile image, HttpServletRequest req, HttpServletResponse res) throws Exception {
+        User user = userService.getUserByToken(req);
+
+        if(!user.getProfileImageURL().isEmpty()) {
+            String imageId = user.getProfileImageURL();
+            user.setProfileImageURL("");
+            profileImageService.deleteProfileImage(imageId);
+        }
+
+        user = userService.addProfileImageToUser(user, profileImageService.addProfileImage(image));
+
+        ProfileImage profileImage = profileImageService.getProfileImage(user.getProfileImageURL()).isPresent() ? profileImageService.getProfileImage(user.getProfileImageURL()).get() : null;
+        if(profileImage == null)
+            return utility.createResponseEntity("image","image not found","Profile image not found",NOT_MODIFIED);
+        return utility.createResponseEntity("image",Base64.getEncoder().encodeToString(profileImage.getImage().getData()),"Profile image updated",OK);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Response> getProfileImage(@PathVariable String id, Model model){
         ProfileImage profileImage = profileImageService.getProfileImage(id).isPresent() ? profileImageService.getProfileImage(id).get() : null;

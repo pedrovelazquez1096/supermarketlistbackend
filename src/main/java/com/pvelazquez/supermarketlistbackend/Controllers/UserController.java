@@ -15,6 +15,7 @@ import com.pvelazquez.supermarketlistbackend.Utilities.Utility;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,8 +26,6 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static java.time.LocalDateTime.now;
-import static java.util.Map.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -36,7 +35,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
-    private final UserService userService;
+    @Autowired
+    private UserService userService;
     private final EmailSender emailSender;
     private final Utility utility = Utility.getInstance();
 
@@ -62,6 +62,33 @@ public class UserController {
     @PostMapping("/user/save")
     public ResponseEntity<Response> saveUser(@RequestBody User user) throws Exception{
         return utility.createResponseEntity("user", userService.saveUser(user), "user created", CREATED);
+    }
+
+    @PutMapping("/user/changename")
+    public ResponseEntity<Response> changeName(HttpServletRequest req, @RequestBody ChangeNameForm changeNameForm) throws Exception {
+        User user = userService.getUserByToken(req);
+
+        user.setName(changeNameForm.getName());
+
+        user = userService.updateUser(user);
+        user.setPassword("");
+        user.setVerificationCode("");
+
+        return utility.createResponseEntity("user", user,"Name updated", OK);
+    }
+
+    @PutMapping("/user/changepassword")
+    public ResponseEntity<Response> changePassword(HttpServletRequest req, @RequestBody ChangePassword changePassword) throws Exception {
+        User user = userService.getUserByToken(req);
+
+        if(!changePassword.getNewPassword().equals(changePassword.getNewPassword_r()))
+            return utility.createResponseEntity("Result", "Not modified","Passwords do not match", NOT_MODIFIED);
+
+        if(utility.validatePassword(changePassword.getNewPassword()) != null)
+            return utility.createResponseEntity("Result", "Not modified", utility.validatePassword(changePassword.getNewPassword()),NOT_MODIFIED);
+
+        user = userService.updateUserPassword(user, changePassword.getNewPassword());
+        return utility.createResponseEntity("Result", user, "Password changed successfully", OK);
     }
 
     @PostMapping("/signup/registration")
@@ -204,4 +231,16 @@ class RoleToUserForm{
 class ConfirmationForm{
     private String email;
     private String code;
+}
+
+@Data
+class ChangeNameForm{
+    private String name;
+}
+
+@Data
+class ChangePassword{
+    private String oldPassword;
+    private String newPassword;
+    private String newPassword_r;
 }
