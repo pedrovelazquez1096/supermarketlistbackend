@@ -47,7 +47,7 @@ public class UserController {
     }
 
     @GetMapping("/users/me")
-    public ResponseEntity<Response> getMe(HttpServletRequest req, HttpServletResponse res){
+    public ResponseEntity<Response> getMe(HttpServletRequest req){
         User user = userService.getUserByToken(req);
 
         return utility.createResponseEntity("me", user, "user retrieved", OK);
@@ -70,7 +70,7 @@ public class UserController {
 
         user.setName(changeNameForm.getName());
 
-        user = userService.updateUser(user);
+        userService.updateUser(user);
         user.setPassword("");
         user.setVerificationCode("");
 
@@ -200,7 +200,6 @@ public class UserController {
                 new ObjectMapper().writeValue(res.getOutputStream(),response1);
 
             }catch (Exception e){
-                res.setHeader("error", e.getMessage());
                 res.setStatus(FORBIDDEN.value());
 
                 Map<String, String> error = new HashMap<>();
